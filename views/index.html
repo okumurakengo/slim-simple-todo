@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>Document</title>
+
+<h1>Simple Todo List</h1>
+<form><input type="text" name="text"><button>追加</button></form>
+<ul></ul>
+
+<template>
+    <li>
+        <label>
+            <input type="checkbox" name="todo[]">
+            <span>hoge</span>
+        </label>
+    </li>
+</template>
+
+<script>
+    const ul = document.querySelector("ul")
+    const li = document.querySelector("template").content.querySelector("li")
+
+    // リスト取得
+    const getList = async () => {
+        ul.innerHTML = ""
+        for (const { id, text, completed } of await fetch("./api/list").then(res => res.json())) {
+            const clone = li.cloneNode(true)
+
+            const checkbox = clone.querySelector("[type=checkbox]")
+            checkbox.checked = !!Number(completed)
+            checkbox.setAttribute("data-id", id)
+            checkbox.addEventListener("change", async e => {
+                // チェックする
+                await fetch(`./api/complete/${e.target.dataset.id}`, { method: "POST" })
+                getList()
+            })
+
+            const span = clone.querySelector("span")
+            span.textContent = text
+            span.style.textDecoration = !!Number(completed) ? "line-through" : ""
+
+            ul.insertAdjacentElement("beforeend", clone)
+        }
+    }
+
+    // リスト追加
+    document.querySelector("form").addEventListener("submit", async e => {
+        e.preventDefault()
+        const input = document.querySelector("[type=text]")
+        if (!input.value) return;
+
+        await fetch("./api/add", { method: "POST", body: new FormData(e.target) })
+        getList()
+
+        input.value = ""
+    })
+
+    getList()
+</script>
